@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FullCalendar Example</title>
+  <!-- FullCalendar CSS and JavaScript -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+</head>
+<body>
+
+  <!-- Calendar Container -->
+  <div id="calendar"></div>
+
+  <!-- Calendar Initialization Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,dayGridWeek,dayGridDay'
+        },
+        events: [
+          { title: 'Event 1', start: '2023-11-06' },
+          { title: 'Event 2', start: '2023-11-10', end: '2023-11-12' }
+        ]
+      });
+
+      calendar.render();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Calendar</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        .calendar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background-color: #f7f7f7;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            background-color: #4CAF50;
+            color: white;
+        }
+        .hall-selection {
+            margin-bottom: 10px;
+        }
+        .days-of-week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            width: 100%;
+            background-color: #ddd;
+        }
+        .days-of-week div {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            width: 100%;
+        }
+        .calendar-days .day {
+            padding: 0px;
+            border: 1px solid #ccc;
+            text-align: center;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+        }
+        .calendar-days .day.unavailable {
+            background-color: #f0f0f0;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+        .availability-info {
+            font-size: 0.8em;
+            color: #555;
+            margin-top: 5px;
+        }
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover {
+            color: black;
+            cursor: pointer;
+        }
+        /* Style for available text (green) */
+/* Calendar container to maintain full viewport visibility */
+#calendar-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Allow scrolling on smaller screens */
+}
+
+/* Month and year header */
+#monthYear {
+    text-align: center;
+    font-size: 1.5em;
+    padding: 10px 0;
+    margin-bottom: 10px;
+}
+/* Calendar grid styling */
+#calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 columns for days of the week */
+    gap: 5px;
+    flex-grow: 1;
+    padding: 5px;
+}
+
+/* Each day cell styling */
+.day {
+    min-height: 60px; /* Ensures each cell is tall enough without overflow */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1em;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    padding: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #monthYear {
+        font-size: 1.2em;
+        margin-bottom: 8px;
+    }
+    #calendar-days {
+        grid-template-columns: repeat(7, 1fr); /* Keep 7 columns */
+        gap: 4px; /* Reduce gap on mobile */
+    }
+
+    .day {
+        font-size: 0.9em;
+        min-height: 50px;
+        padding: 3px; /* Reduced padding for mobile */
+    }
+
+    /* Ensure overall container is scrollable */
+    #calendar-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        padding-bottom: 20px;
+    }
+
+    /* Make calendar smaller for mobile */
+    .day {
+        font-size: 0.8em; /* Smaller text size */
+        min-height: 40px; /* Smaller height for better fit */
+    }
+}
+/* For very small screens (e.g., below 480px) */
+@media (max-width: 480px) {
+    #monthYear {
+        font-size: 1em;
+    }
+
+    .day {
+        font-size: 0.75em; /* Even smaller text size */
+        min-height: 35px;
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    
+    <div class="calendar">
+        <header>
+            <div id="monthYear"></div> <!-- This will display the current month and year -->
+            
+            <div class="navigation">
+                <button onclick="changeMonth(-1)">&lt;</button> <!-- Previous month button -->
+                <button onclick="changeMonth(1)">&gt;</button> <!-- Next month button -->
+            </div>
+        </header>
+        
+        <div class="hall-selection" style="padding-top: 10px; padding-bottom: 10px;">
+            <label for="hall">Select Hall:</label>
+            <select id="hall" onchange="updateCalendar()">
+                <option value="mini">Mini Hall</option>
+                <option value="main">Main Hall</option>
+            </select>
+        </div>
+        
+        
+        <div class="days-of-week">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+        
+        <div class="calendar-days" id="calendar-days">
+            <!-- Days generated by JavaScript -->
+        </div>
+    </div>
+    
+<!-- Modal Structure -->
+<div id="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000;">
+    <div style="background: white; margin: auto; padding: 20px; width: 400px; border-radius: 8px; position: relative; top: 50%; transform: translateY(-50%); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+        <span onclick="closeModal()" style="cursor: pointer; position: absolute; top: 10px; right: 10px; font-size: 20px; color: #888;">&times;</span>
+        <h2 style="margin: 0; font-size: 20px; color: #333;">Booking for <span id="modal-date" style="font-weight: bold; color: #007bff;"></span></h2>
+        <form id="bookingForm" style="margin-top: 20px;">
+            <div>
+                <label for="name" style="display: block; margin-bottom: 5px;">Name:</label>
+                <input type="text" id="name" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"/>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="phone" style="display: block; margin-bottom: 5px;">Phone Number:</label>
+                <input type="tel" id="phone" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"/>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="timeSlot" style="display: block; margin-bottom: 5px;">Time Slot:</label>
+                <select id="timeSlot" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="morning">Morning (9-3)</option>
+                    <option value="evening">Evening (4-10)</option>
+                </select>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="message" style="display: block; margin-bottom: 5px;">Message:</label>
+                <textarea id="message" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none;"></textarea>
+            </div>
+            <button type="submit" style="margin-top: 15px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Submit</button>
+        </form>
+    </div>
+</div>
+
+
+
+    <script>
+        let currentMonth = 10; // November (0-indexed for JS)
+        let currentYear = 2024;
+    
+        function openModal(date) {
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('modal-date').querySelector('span').innerText = date;
+    
+            // Reset the form fields
+            document.getElementById('bookingForm').reset();
+    
+            // Handle form submission
+            const bookingForm = document.getElementById('bookingForm');
+            bookingForm.onsubmit = function(event) {
+                event.preventDefault(); // Prevent form submission
+    
+                // Retrieve values from the form
+                const name = document.getElementById('name').value;
+                const phone = document.getElementById('phone').value;
+                const timeSlot = document.getElementById('timeSlot').value;
+                const message = document.getElementById('message').value;
+    
+                // Here you can add logic to handle the booking, such as sending it to a server
+                alert(`Booking Confirmed:\nDate: ${date}\nName: ${name}\nPhone: ${phone}\nTime Slot: ${timeSlot}\nMessage: ${message}`);
+    
+                // Clear the form and close the modal
+                bookingForm.reset();
+                closeModal();
+            };
+        }
+    
+        const availabilityData = {
+            mini: {
+                "2024-11-05": { morning: false, evening: true },
+                "2024-11-12": { morning: true, evening: false },
+                "2024-11-19": { morning: false, evening: true },
+                "2024-11-26": { morning: true, evening: true },
+                "2024-11-30": { morning: true, evening: true }
+            },
+            main: {
+                "2024-11-05": { morning: true, evening: false },
+                "2024-11-12": { morning: false, evening: true },
+                "2024-11-19": { morning: false, evening: true },
+                "2024-11-30": { morning: true, evening: true }
+            }
+        };
+    
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth < 0) {
+                currentMonth = 11; // December
+                currentYear--; // Go back a year
+            } else if (currentMonth > 11) {
+                currentMonth = 0; // January
+                currentYear++; // Go forward a year
+            }
+            updateCalendar();
+            updateMonthYearHeader();
+        }
+    
+        function updateMonthYearHeader() {
+            const monthNames = ["January", "February", "March", "April", "May", "June", 
+                                "July", "August", "September", "October", "November", "December"];
+            document.getElementById('monthYear').innerText = `${monthNames[currentMonth]} ${currentYear}`;
+        }
+    
+        function updateCalendar() {
+            const calendarDays = document.getElementById('calendar-days');
+            calendarDays.innerHTML = '';
+            const hallType = document.getElementById('hall').value;
+    
+            for (let i = 1; i <= 30; i++) {
+                const date = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+                const availability = availabilityData[hallType][date];
+                
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.innerHTML = `<strong>${i}</strong>`;
+    
+                if (availability) {
+                    const info = document.createElement('div');
+                    info.classList.add('availability-info');
+    
+                    // Check morning slot availability
+                    if (availability.morning) {
+                        const morningInfo = document.createElement('div');
+                        morningInfo.innerText = 'Morning slot available';
+                        morningInfo.style.color = 'green'; // Inline style for available
+                        morningInfo.style.fontWeight = 'bold'; // Inline style for bold text
+                        info.appendChild(morningInfo);
+                    } else {
+                        const morningInfo = document.createElement('div');
+                        morningInfo.innerText = 'Morning slot not available';
+                        morningInfo.style.color = 'red'; // Inline style for not available
+                        morningInfo.style.fontWeight = 'bold'; // Inline style for bold text
+                        info.appendChild(morningInfo);
+                    }
+    
+                    // Check evening slot availability
+                    if (availability.evening) {
+                        const eveningInfo = document.createElement('div');
+                        eveningInfo.innerText = 'Evening slot available';
+                        eveningInfo.style.color = 'green'; // Inline style for available
+                        eveningInfo.style.fontWeight = 'bold'; // Inline style for bold text
+                        info.appendChild(eveningInfo);
+                    } else {
+                        const eveningInfo = document.createElement('div');
+                        eveningInfo.innerText = 'Evening slot not available';
+                        eveningInfo.style.color = 'red'; // Inline style for not available
+                        eveningInfo.style.fontWeight = 'bold'; // Inline style for bold text
+                        info.appendChild(eveningInfo);
+                    }
+    
+                    // Determine if the day is fully unavailable
+                    if (!availability.morning && !availability.evening) {
+                        dayElement.classList.add('unavailable');
+                        dayElement.onclick = null; // No modal for fully unavailable dates
+                    } else {
+                        dayElement.onclick = () => openModal(date);
+                    }
+    
+                    dayElement.appendChild(info);
+                } else {
+                    // No availability data - mark day as unavailable
+                    dayElement.classList.add('unavailable');
+                    dayElement.onclick = null; // No modal if no availability data
+                }
+    
+                calendarDays.appendChild(dayElement);
+            }
+        }
+    
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+    
+        // Initialize calendar on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCalendar();
+            updateMonthYearHeader(); // Initialize month and year display
+        });
+
+
+
+
+        function updateCalendar() {
+            const calendarDays = document.getElementById('calendar-days');
+            calendarDays.innerHTML = '';
+            const hallType = document.getElementById('hall').value;
+        
+            // Get the correct number of days for the current month and year
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+            for (let i = 1; i <= daysInMonth; i++) {
+                const date = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+                const availability = availabilityData[hallType][date];
+                
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.innerHTML = `<strong>${i}</strong>`;
+        
+                if (availability) {
+                    const info = document.createElement('div');
+                    info.classList.add('availability-info');
+        
+                    // Morning slot availability
+                    const morningInfo = document.createElement('div');
+                    morningInfo.innerText = availability.morning ? 'Morning slot available' : 'Morning slot not available';
+                    morningInfo.style.color = availability.morning ? 'green' : 'red';
+                    morningInfo.style.fontWeight = 'bold';
+                    info.appendChild(morningInfo);
+        
+                    // Evening slot availability
+                    const eveningInfo = document.createElement('div');
+                    eveningInfo.innerText = availability.evening ? 'Evening slot available' : 'Evening slot not available';
+                    eveningInfo.style.color = availability.evening ? 'green' : 'red';
+                    eveningInfo.style.fontWeight = 'bold';
+                    info.appendChild(eveningInfo);
+        
+                    if (!availability.morning && !availability.evening) {
+                        dayElement.classList.add('unavailable');
+                        dayElement.onclick = null; // Fully unavailable dates
+                    } else {
+                        dayElement.onclick = () => openModal(date);
+                    }
+        
+                    dayElement.appendChild(info);
+                } else {
+                    dayElement.classList.add('unavailable');
+                    dayElement.onclick = null;
+                }
+        
+                calendarDays.appendChild(dayElement);
+            }
+        }
+
+        
+
+        function updateCalendar() {
+            const calendarDays = document.getElementById('calendar-days');
+            calendarDays.innerHTML = '';
+            const hallType = document.getElementById('hall').value;
+        
+            // Determine the number of days in the current month and year
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+            for (let i = 1; i <= daysInMonth; i++) {
+                const date = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+                const availability = availabilityData[hallType][date];
+                
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.innerHTML = `<strong>${i}</strong>`;
+        
+                if (currentMonth === 10) { // November only
+                    // If in November, apply availability logic
+                    if (availability) {
+                        const info = document.createElement('div');
+                        info.classList.add('availability-info');
+        
+                        // Morning slot availability
+                        const morningInfo = document.createElement('div');
+                        morningInfo.innerText = availability.morning ? 'Morning slot available' : 'Morning slot not available';
+                        morningInfo.style.color = availability.morning ? 'green' : 'red';
+                        morningInfo.style.fontWeight = 'bold';
+                        info.appendChild(morningInfo);
+        
+                        // Evening slot availability
+                        const eveningInfo = document.createElement('div');
+                        eveningInfo.innerText = availability.evening ? 'Evening slot available' : 'Evening slot not available';
+                        eveningInfo.style.color = availability.evening ? 'green' : 'red';
+                        eveningInfo.style.fontWeight = 'bold';
+                        info.appendChild(eveningInfo);
+        
+                        // Determine if the day is fully unavailable
+                        if (!availability.morning && !availability.evening) {
+                            dayElement.classList.add('unavailable');
+                            dayElement.onclick = null; // Fully unavailable dates
+                        } else {
+                            dayElement.onclick = () => openModal(date); // Available slots
+                        }
+        
+                        dayElement.appendChild(info);
+                    } else {
+                        // No availability data - mark day as unavailable
+                        dayElement.classList.add('unavailable');
+                        dayElement.onclick = null;
+                    }
+                } else {
+                    // For all other months, make all dates clickable without availability checks
+                    dayElement.onclick = () => openModal(date);
+                }
+        
+                calendarDays.appendChild(dayElement);
+            }
+        }
+        
+
+
+
+        
+    </script>
+
+<script>
+    function openModal(date) {
+        const selectedDate = new Date(date);  // Convert the string date to a Date object
+        const currentMonth = selectedDate.getMonth(); // Get the month (0 for Jan, 10 for Nov)
+        
+        // Show the modal
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('modal-date').innerText = date;
+        
+        // Check if the selected date is in November (10)
+        if (currentMonth === 10) {
+            // For November, show availability based on the selected date and hall
+            const hallType = document.getElementById('hall').value;
+            const availability = availabilityData[hallType][date];
+    
+            const timeSlotSelect = document.getElementById('timeSlot');
+            timeSlotSelect.innerHTML = ''; // Clear previous options
+    
+            if (availability) {
+                if (availability.morning) {
+                    const morningOption = document.createElement('option');
+                    morningOption.value = 'morning';
+                        morningOption.textContent = 'Morning (9-3)';
+                        timeSlotSelect.appendChild(morningOption);
+                    }
+        
+                    if (availability.evening) {
+                        const eveningOption = document.createElement('option');
+                        eveningOption.value = 'evening';
+                        eveningOption.textContent = 'Evening (4-10)';
+                        timeSlotSelect.appendChild(eveningOption);
+                    }
+                } else {
+                    alert("No slots available for the selected date.");
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

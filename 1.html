@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Booking</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .day {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 40px;
+            cursor: pointer;
+        }
+
+        .unavailable {
+            background-color: red !important;
+            color: white !important;
+            cursor: not-allowed;
+        }
+
+        .selected {
+            background-color: blue;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-dark mb-4">Online Booking</h1>
+        <form id="booking-form">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="name" placeholder="Your Name" required>
+                </div>
+                <div class="col-md-6">
+                    <input type="email" class="form-control" id="email" placeholder="Your Email" required>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="event" placeholder="Event" required>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" id="select1" required>
+                        <option value="" disabled selected>Select Hall</option>
+                        <option value="main">Main Hall</option>
+                        <option value="mini">Mini Hall</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="selected-date" placeholder="Select Date" readonly required>
+                    <div class="calendar" id="calendar"></div>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" id="time-slot" required>
+                        <option value="" disabled selected>Select a Time Slot</option>
+                        <option value="09:00-15:00">09:00 AM - 03:00 PM</option>
+                        <option value="16:00-22:00">04:00 PM - 10:00 PM</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <textarea class="form-control" id="message" placeholder="Special Request" style="height: 100px"></textarea>
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary w-100" type="submit">Book Now</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const bookedSlots = {
+            "main": ["2024-11-10", "2024-11-12"], // Unavailable dates for Main Hall
+            "mini": ["2024-11-11"]                // Unavailable dates for Mini Hall
+        };
+
+        const calendar = document.getElementById("calendar");
+        const selectedDateInput = document.getElementById("selected-date");
+        const hallSelect = document.getElementById("select1");
+
+        hallSelect.addEventListener("change", createCalendar);
+
+        function createCalendar() {
+            calendar.innerHTML = ''; // Clear previous calendar
+            const selectedHall = hallSelect.value;
+
+            // Create a simple calendar for the next 30 days
+            const today = new Date();
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateString = date.toISOString().split('T')[0];
+                const dayDiv = document.createElement("div");
+                dayDiv.className = "day";
+                dayDiv.innerText = date.getDate();
+
+                // Check if the selected hall has this date booked
+                if (bookedSlots[selectedHall] && bookedSlots[selectedHall].includes(dateString)) {
+                    dayDiv.classList.add("unavailable"); // Highlight unavailable dates
+                } else {
+                    dayDiv.onclick = () => {
+                        selectedDateInput.value = dateString; // Set selected date
+                        clearSelectedDays();
+                        dayDiv.classList.add("selected"); // Highlight selected day
+                    };
+                }
+
+                calendar.appendChild(dayDiv);
+            }
+        }
+
+        function clearSelectedDays() {
+            const days = document.querySelectorAll('.day');
+            days.forEach(day => {
+                day.classList.remove('selected');
+            });
+        }
+
+        document.getElementById("booking-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+            alert("Booking confirmed!");
+            // Logic to handle form submission
+        });
+    </script>
+</body>
+</html>
